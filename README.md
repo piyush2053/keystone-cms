@@ -1,40 +1,44 @@
-# Keystone Control Center
+# Keystone web portals
 
-A React + Vite dashboard for the Keystone company owner. It manages organizations and their first administrators, app users, teams, access status and an immutable activity log. Existing mobile/web app features are retained.
+React + Vite app with three sign-ins on the same backend, styled like the Keystone prototype
+([../UI](../UI)):
+
+| Route | Who | What |
+| --- | --- | --- |
+| `#/broker` | Broker / channel partner | Home, Current mandates (filters, transfer one / many / all leads, restart in Fresh), Create mandate (project, agents, Excel/CSV upload by agent column, split or shared pool), Performance (Plus: per agent; Pro: funnel, red flags, feedback), New launches (swipe deck), Profile (personal info, agents and their logins, developer access, plan, agent requests, password) |
+| `#/developer` | Developer (property owner) and teammates | Home, shared mandates, view-only performance with KRAs (no client names or numbers), paid campaigns with live estimate and deck preview, profile and teammates |
+| `#/admin` | Keystone owner | Onboard brokers, confirm plan and campaign payments, suspend, CP reach per locality, activity |
+| `#/` | Everyone | Landing page linking the three products |
+
+Broker logins are created in `#/admin`. Agent and developer logins are created by the broker
+(developers can add teammates). Each new login shows its user ID and password once.
+
+There is no payment gateway yet: plan changes and campaigns wait as "payment pending" until the
+owner marks them paid. A paid campaign starts in matching brokers' New launches deck at once.
 
 ## Start
 
 ```sh
 npm install
-npm run dev
+npm run dev          # http://127.0.0.1:5173 (the BE must be running on port 3000)
 ```
 
-Open http://127.0.0.1:5173. On subsequent runs, only `npm run dev` is needed. The BE must be running separately on port 3000. Copy `.env.example` to `.env` only if you need a different backend URL. The development proxy routes `/api/cms` to the BE.
+The Vite dev server proxies `/api` to the backend (`BACKEND_URL` in `.env`, default
+`http://127.0.0.1:3000`). Set `VITE_APP_URL` to link the tele-caller app from the landing page.
 
-Create the owner on the backend: apply migrations (`001_core.sql`, then the new `002_cms.sql`), set `CMS_OWNER_EMAIL`, `CMS_OWNER_NAME` and `CMS_OWNER_PASSWORD` in **BE/.env**, and run `npm run cms:owner` from BE. Owner login does not need an organization ID. App organization-admin accounts cannot log into this control center.
+Demo logins after `npm run seed` in BE (password = `SEED_PASSWORD`): broker `amit.kulkarni`,
+developer `neha.bhatia`; owner from `OWNER_EMAIL` / `OWNER_PASSWORD` (`npm run owner`).
 
-## Workspace
-
-- Overview: real organization, user and team counts, six-month growth and recent activity.
-- Organizations: search, onboard with a first admin, copy generated IDs, edit contact details/plan/notes, suspend and reactivate access.
-- People: create users with any supported app role, filter/search, edit accounts, reset passwords, disable and restore access.
-- Teams: select an organization, active team lead and members; edit existing teams.
-- Activity: owner actions recorded in an append-only backend audit trail.
-- Settings: update the owner name and change password with current-password verification.
-
-Onboarding returns generated IDs and shows initial sign-in details once for secure handover. No external invitation emails are sent. Initial passwords are not persisted in browser storage. Owner sessions use HttpOnly cookies; no auth tokens or backend secrets are bundled in this app. Plans are metadata, not a payment integration.
+Sessions are HttpOnly cookies per portal, so the broker and developer sites can be open in two
+tabs. Writes carry the `X-Keystone-Request` header. Live updates arrive over Server-Sent Events.
 
 ## Production
 
-`npm run build` emits `dist/`. Serve it behind HTTPS with a same-origin `/api/cms` reverse proxy to the BE. Set **BE/.env** `CMS_ORIGIN=https://your-cms-domain.example`.
-
-An optional Dockerfile and Nginx configuration are included:
+`npm run build` emits `dist/`. Serve it with a same-origin `/api` reverse proxy to the BE (the
+included `nginx.conf` does this; `BACKEND_URL` is the upstream) and add the portal origin to the
+backend's `CMS_ORIGIN`.
 
 ```sh
 docker build -t keystone-cms .
-docker run -p 5173:80 -e BACKEND_URL=http://your-backend-host:3000 keystone-cms
+docker run -p 5173:80 -e BACKEND_URL=http://your-backend:3000 keystone-cms
 ```
-
-Configure TLS at your ingress. `BACKEND_URL` in the container is the Nginx upstream; `VITE_API_BASE` (default `/api/cms`) is a public build-time browser setting. Put owner bootstrap credentials only in BE/.env, never in `VITE_*` variables.
-
-Checks: `npm run build`, `npm run lint`. Backend migration, API and credential recovery details: [BE/docs/CMS.md](../BE/docs/CMS.md).

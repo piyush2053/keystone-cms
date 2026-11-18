@@ -11,7 +11,7 @@ export default defineConfig(({ mode }) => {
       port: 5173,
       strictPort: true,
       proxy: {
-        "/api/cms": {
+        "/api": {
           target: env.BACKEND_URL || "http://127.0.0.1:3000",
           changeOrigin: true,
         },
