@@ -3,15 +3,11 @@ import { api, login, logout, useLive } from "./api";
 import { Icon, Logo, initials, Toasts } from "./lib";
 
 const LABEL = { broker: "for Brokers", developer: "for Developers", owner: "Owner console" };
-const SWITCH = {
-  broker: [["#/developer", "Developer site"]],
-  developer: [["#/broker", "Broker site"]],
-  owner: [
-    ["#/broker", "Broker site"],
-    ["#/developer", "Developer site"],
-  ],
-};
-export const APP_URL = import.meta.env.VITE_APP_URL || "";
+// The landing page is the sign-in: one tab for brokers, one for developers.
+const LOGIN_TABS = [
+  ["broker", "Broker login", "#/broker"],
+  ["developer", "Developer login", "#/developer"],
+];
 
 /** Restores a portal session from its cookie, or shows that portal's sign-in. */
 export function useSession(kind) {
@@ -77,15 +73,6 @@ export function WebShell({ kind, nav, page, go, user, crumb, right, children, on
           <button className="gbtn" style={{ justifySelf: "start", marginLeft: 8 }} onClick={onSignOut}>
             <Icon n="logout" s={14} /> Sign out
           </button>
-          <div className="side-switch">
-            <span className="sl">Switch view</span>
-            {SWITCH[kind].map(([href, l]) => (
-              <a key={href} href={href}>
-                {l}
-              </a>
-            ))}
-            <a href="#/">All three</a>
-          </div>
         </div>
       </aside>
       <main className="wmain" id="wmain">
@@ -142,23 +129,19 @@ export function WebLogin({ kind, title, lede, onSignIn, idLabel = "User ID", for
           <h1>{title}</h1>
           <p>{lede}</p>
         </div>
-        <p style={{ fontSize: 13, margin: 0 }}>
-          Switch view:{" "}
-          {SWITCH[kind].map(([href, l]) => (
-            <span key={href}>
-              <a href={href} style={{ color: "var(--gold-2)" }}>
-                {l}
-              </a>{" "}
-              ·{" "}
-            </span>
-          ))}
-          <a href="#/" style={{ color: "var(--gold-2)" }}>
-            All three
-          </a>
-        </p>
+        <p style={{ fontSize: 13, margin: 0, color: "rgba(247,244,237,.6)" }}>One system for brokers, developers and their tele-calling teams.</p>
       </div>
       <div className="wl-form">
         <form onSubmit={submit}>
+          {kind !== "owner" ? (
+            <div className="seg" role="tablist" style={{ alignSelf: "flex-start" }}>
+              {LOGIN_TABS.map(([k, l, href]) => (
+                <button key={k} type="button" role="tab" aria-selected={kind === k} className={kind === k ? "on" : ""} onClick={() => (location.hash = href)}>
+                  {l}
+                </button>
+              ))}
+            </div>
+          ) : null}
           <div>
             <p className="eyebrow">{kind === "broker" ? "Broker sign in" : kind === "developer" ? "Developer sign in" : "Keystone owner"}</p>
             <h2>Welcome back</h2>
